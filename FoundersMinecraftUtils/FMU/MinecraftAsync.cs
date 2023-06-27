@@ -165,7 +165,6 @@ namespace FMU
 
             try
             {
-
                 await Task.Run(() =>
                 {
                     string premiumCachePath = Path.Combine(localState, "premium_cache");
