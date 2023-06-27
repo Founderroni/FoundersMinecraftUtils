@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace FMU
@@ -7,7 +8,8 @@ namespace FMU
     public static class MinecraftAsync
     {
         #region Variables
-        public static readonly string DefaultMcpeDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), @"Packages\Microsoft.MinecraftUWP_8wekyb3d8bbwe\LocalState\games\com.mojang\minecraftpe\");
+        public static readonly string MinecraftPackageDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), @"Packages\Microsoft.MinecraftUWP_8wekyb3d8bbwe");
+        public static string DefaultMcpeDirectory = Path.Combine(MinecraftPackageDirectory, @"LocalState\games\com.mojang\minecraftpe\");
         public static readonly string OptionsFile = Path.Combine(DefaultMcpeDirectory, "options.txt");
         #endregion
 
@@ -146,6 +148,54 @@ namespace FMU
                 return success;
             }
             catch (Exception)
+            {
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Clears cached files to clear up storage space
+        /// </summary>
+        public static async Task<bool> ClearCache(bool skinCache = true, bool deleteFolders = true)
+        {
+            if (!Directory.Exists(MinecraftPackageDirectory))
+                return false;
+
+            string localState = Path.Combine(MinecraftPackageDirectory, "LocalState");
+
+            try
+            {
+
+                await Task.Run(() =>
+                {
+                    string premiumCachePath = Path.Combine(localState, "premium_cache");
+
+                    if (skinCache)
+                    {
+                        if (deleteFolders)
+                        {
+                            if (Directory.Exists(premiumCachePath))
+                                Directory.Delete(premiumCachePath, true);
+                        }
+                        else
+                        {
+                            if (Directory.Exists(premiumCachePath))
+                                foreach (string file in Directory.EnumerateFiles(premiumCachePath, "*.*", SearchOption.AllDirectories))
+                                    File.Delete(file);
+                        }
+
+                        if (Directory.Exists(localState))
+                            foreach (string file in Directory.EnumerateFiles(localState, "*.png"))
+                                File.Delete(file);
+                    }
+
+                    if (Directory.Exists(localState))
+                        foreach (string file in Directory.EnumerateFiles(localState, "*.*").Where(f => f.EndsWith(".ent") || f.EndsWith(".cache")))
+                            File.Delete(file);
+                });
+
+                return true;
+            } catch (Exception)
             {
                 return false;
             }
